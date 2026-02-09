@@ -1,14 +1,13 @@
 /**
- * Bexalta WOW Effects v2.0.1 — Premium Bundle
+ * Bexalta WOW Effects v2.0.2 — Premium Bundle
  * "Claridad Radical" visual system
  *
  * Single entry point orchestrating all effects.
  * GSAP + ScrollTrigger loaded externally from Webflow header.
- * Three.js + Lenis bundled here.
+ * Three.js bundled here. Native scroll (no Lenis).
  */
 
 import * as THREE from 'three';
-import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -21,7 +20,7 @@ import { ScrollAnimations } from './effects/ScrollAnimations.js';
 import { TopographyOverlay } from './effects/TopographyOverlay.js';
 
 // Global namespace
-window.BexaltaWOW = { version: '2.0.1' };
+window.BexaltaWOW = { version: '2.0.2' };
 
 /**
  * Wait for GSAP + ScrollTrigger globals (loaded async by Webflow header).
@@ -51,12 +50,11 @@ function waitForGSAP() {
 }
 
 async function init() {
-    console.log('[BexaltaWOW] v2.0.1 — Claridad Radical');
+    console.log('[BexaltaWOW] v2.0.2 — Claridad Radical');
 
     // --- 0. WAIT FOR GSAP (async loaded by Webflow header) ---
     await waitForGSAP();
 
-    // Register ScrollTrigger only after confirmed available
     if (window.gsap && window.ScrollTrigger) {
         gsap.registerPlugin(ScrollTrigger);
     }
@@ -65,31 +63,7 @@ async function init() {
     const preloader = new Preloader();
     await preloader.run();
 
-    // --- 2. LENIS SMOOTH SCROLL ---
-    const lenis = new Lenis({
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        smoothWheel: true,
-        syncTouch: false,
-        touchMultiplier: 2,
-    });
-
-    // Connect RAF immediately via requestAnimationFrame (always available)
-    function raf(time) {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    // Connect to ScrollTrigger if available
-    if (ScrollTrigger) {
-        lenis.on('scroll', ScrollTrigger.update);
-    }
-    gsap.ticker.lagSmoothing(0);
-
-    window.BexaltaWOW.lenis = lenis;
-
-    // --- 3. THREE.JS RENDERER (Single WebGL Context) ---
+    // --- 2. THREE.JS RENDERER (Single WebGL Context) ---
     const canvas = document.createElement('canvas');
     canvas.id = 'wow-webgl-canvas';
     Object.assign(canvas.style, {
@@ -139,7 +113,6 @@ async function init() {
     new ScrollAnimations();
 
     // F. Topography Overlay — Industrial contours (S1-S2)
-    // Asset URL set via data attribute: <body data-topo-asset="https://...">
     const topoUrl = document.body.dataset.topoAsset || null;
     if (topoUrl) {
         new TopographyOverlay(topoUrl);
@@ -163,12 +136,15 @@ async function init() {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // --- 6. SCROLL EVENT DISPATCH ---
-    lenis.on('scroll', ({ progress, scroll }) => {
+    // --- 6. SCROLL EVENT DISPATCH (native scroll) ---
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const maxScroll = document.body.scrollHeight - window.innerHeight;
+        const progress = maxScroll > 0 ? scrollTop / maxScroll : 0;
         window.dispatchEvent(new CustomEvent('wow-scroll', {
-            detail: { progress, scrollTop: scroll }
+            detail: { progress, scrollTop }
         }));
-    });
+    }, { passive: true });
 
     console.log('[BexaltaWOW] All effects initialized');
 }
