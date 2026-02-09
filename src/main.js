@@ -1,5 +1,5 @@
 /**
- * Bexalta WOW Effects v2.0 — Premium Bundle
+ * Bexalta WOW Effects v2.0.1 — Premium Bundle
  * "Claridad Radical" visual system
  *
  * Single entry point orchestrating all effects.
@@ -19,36 +19,77 @@ import { ChromaticSpine } from './effects/ChromaticSpine.js';
 import { GreenNodes } from './effects/GreenNodes.js';
 import { ScrollAnimations } from './effects/ScrollAnimations.js';
 import { TopographyOverlay } from './effects/TopographyOverlay.js';
-import { isMobile } from './utils/dom.js';
-
-gsap.registerPlugin(ScrollTrigger);
 
 // Global namespace
-window.BexaltaWOW = { version: '2.0.0' };
+window.BexaltaWOW = { version: '2.0.1' };
+
+/**
+ * Wait for GSAP + ScrollTrigger globals (loaded async by Webflow header).
+ * Resolves immediately if already available, otherwise polls every 50ms.
+ * Times out after 5s to avoid infinite wait.
+ */
+function waitForGSAP() {
+    return new Promise((resolve) => {
+        if (window.gsap && window.ScrollTrigger) {
+            resolve();
+            return;
+        }
+        console.log('[BexaltaWOW] Waiting for GSAP + ScrollTrigger...');
+        const check = setInterval(() => {
+            if (window.gsap && window.ScrollTrigger) {
+                clearInterval(check);
+                console.log('[BexaltaWOW] GSAP + ScrollTrigger ready');
+                resolve();
+            }
+        }, 50);
+        setTimeout(() => {
+            clearInterval(check);
+            console.warn('[BexaltaWOW] GSAP wait timeout — proceeding anyway');
+            resolve();
+        }, 5000);
+    });
+}
 
 async function init() {
-    console.log('[BexaltaWOW] v2.0.0 — Claridad Radical');
+    console.log('[BexaltaWOW] v2.0.1 — Claridad Radical');
 
-    // --- 0. PRELOADER ---
+    // --- 0. WAIT FOR GSAP (async loaded by Webflow header) ---
+    await waitForGSAP();
+
+    // Register ScrollTrigger only after confirmed available
+    if (window.gsap && window.ScrollTrigger) {
+        gsap.registerPlugin(ScrollTrigger);
+    }
+
+    // --- 1. PRELOADER ---
     const preloader = new Preloader();
     await preloader.run();
 
-    // --- 1. LENIS SMOOTH SCROLL ---
+    // --- 2. LENIS SMOOTH SCROLL ---
     const lenis = new Lenis({
         duration: 1.2,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        smooth: true,
-        smoothTouch: false,
+        smoothWheel: true,
+        syncTouch: false,
         touchMultiplier: 2,
     });
 
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    // Connect RAF immediately via requestAnimationFrame (always available)
+    function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // Connect to ScrollTrigger if available
+    if (ScrollTrigger) {
+        lenis.on('scroll', ScrollTrigger.update);
+    }
     gsap.ticker.lagSmoothing(0);
 
     window.BexaltaWOW.lenis = lenis;
 
-    // --- 2. THREE.JS RENDERER (Single WebGL Context) ---
+    // --- 3. THREE.JS RENDERER (Single WebGL Context) ---
     const canvas = document.createElement('canvas');
     canvas.id = 'wow-webgl-canvas';
     Object.assign(canvas.style, {
