@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bexalta OS — Dev Preview</title>
+
+    <!-- GSAP (simulates Webflow header) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <style>
+        html.lenis, html.lenis body { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto !important; }
+        .lenis.lenis-stopped { overflow: hidden; }
+    </style>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background-color: #080808;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        .bx-hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 80px 10%;
+            position: relative;
+            z-index: 10;
+        }
+        .bx-h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 300;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            max-width: 800px;
+        }
+        .bx-subhead {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            font-weight: 300;
+            color: #727070;
+            max-width: 600px;
+            margin-top: 32px;
+            line-height: 1.6;
+            font-style: italic;
+        }
+        .bx-section {
+            min-height: 80vh;
+            padding: 80px 10%;
+            position: relative;
+            z-index: 10;
+        }
+        .bx-h2 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 300;
+            margin-bottom: 24px;
+        }
+        .bx-body {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #C7C6C6;
+            max-width: 700px;
+            margin-bottom: 16px;
+        }
+        .bx-container { max-width: 1200px; margin: 0 auto; }
+        .bx-capabilities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+        .bx-capability {
+            padding: 24px;
+            border: 1px solid #2d2d2d;
+            border-radius: 8px;
+            position: relative;
+        }
+        .bx-capability-icon {
+            width: 64px; height: 64px;
+            opacity: 0.7; margin-bottom: 12px;
+            background: #2d2d2d; border-radius: 8px;
+        }
+        .bx-capability-title { font-size: 1rem; font-weight: 500; margin-bottom: 8px; }
+        .bx-capability-text { font-size: 0.85rem; color: #727070; line-height: 1.5; }
+        .bx-stat-row { display: flex; gap: 48px; margin: 40px 0; }
+        .bx-stat-value { font-size: 3rem; font-weight: 200; }
+        .bx-stat-label { font-size: 0.85rem; color: #727070; margin-top: 4px; }
+        .bx-quote { border-left: 2px solid #a2c62e; padding-left: 20px; margin: 32px 0; }
+        .bx-quote-text { font-style: italic; color: #C7C6C6; line-height: 1.6; }
+        .bx-quote-source { font-size: 0.8rem; color: #727070; margin-top: 8px; }
+        .bx-roadmap-list { list-style: none; padding: 0; margin-top: 24px; }
+        .bx-roadmap-item {
+            padding: 12px 0 12px 24px;
+            color: #C7C6C6;
+            border-bottom: 1px solid #2d2d2d;
+            position: relative;
+        }
+        .bx-cta-section {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 80px 10%;
+            position: relative;
+            z-index: 10;
+        }
+        .bx-cta-button {
+            display: inline-block;
+            padding: 16px 48px;
+            background: #a2c62e;
+            color: #080808;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-top: 32px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .bx-cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(162,198,46,0.3);
+        }
+        .bx-cta-micro { font-size: 0.8rem; color: #727070; margin-top: 12px; font-style: italic; }
+        .bx-emphasis { color: #a2c62e; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <section class="bx-hero">
+        <h1 class="bx-h1">30 anos construyendo el portafolio inmobiliario mas solido de Jalisco. Ahora, un sistema operativo para potenciarlo.</h1>
+        <p class="bx-subhead">137,000 m2 rentables. Mas de 300 unidades. Cuatro segmentos. Imagina ver todo ese portafolio — al mismo tiempo, en tiempo real.</p>
+    </section>
+
+    <section class="bx-section" id="s2-vision">
+        <div class="bx-container">
+            <h2 class="bx-h2">Que significaria tener visibilidad total?</h2>
+            <p class="bx-body">Conoces cada propiedad. Conoces cada arrendatario. Treinta anos de operacion continua generan un conocimiento dificil de replicar.</p>
+            <p class="bx-body">Cuando conectas todo lo que sabes, descubres <strong>todo lo que puedes hacer con ello.</strong></p>
+        </div>
+    </section>
+
+    <section class="bx-section" id="s3-bexalta-os">
+        <div class="bx-container">
+            <h2 class="bx-h2">Bexalta OS: el sistema nervioso de tu portafolio</h2>
+            <p class="bx-body"><strong>Bexalta OS</strong> convierte 30 anos de experiencia en inteligencia operativa.</p>
+            <div class="bx-capabilities-grid">
+                <div class="bx-capability"><div class="bx-capability-icon"></div><h3 class="bx-capability-title">Visibilidad Total</h3><p class="bx-capability-text">Inventario digital vivo.</p></div>
+                <div class="bx-capability"><div class="bx-capability-icon"></div><h3 class="bx-capability-title">Mantenimiento Inteligente</h3><p class="bx-capability-text">-30% a -50% costos.</p></div>
+                <div class="bx-capability"><div class="bx-capability-icon"></div><h3 class="bx-capability-title">Compliance</h3><p class="bx-capability-text">Reportes IFRS automaticos.</p></div>
+                <div class="bx-capability"><div class="bx-capability-icon"></div><h3 class="bx-capability-title">Inteligencia Financiera</h3><p class="bx-capability-text">Cobertura USD/MXN.</p></div>
+                <div class="bx-capability"><div class="bx-capability-icon"></div><h3 class="bx-capability-title">Dashboard</h3><p class="bx-capability-text">300+ unidades en una pantalla.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bx-section" id="s4-impacto">
+        <div class="bx-container">
+            <h2 class="bx-h2">Los numeros hablan</h2>
+            <div class="bx-stat-row">
+                <div class="bx-stat"><div class="bx-stat-value">15%</div><div class="bx-stat-label">Mayor rentabilidad</div></div>
+                <div class="bx-stat"><div class="bx-stat-value">-30%</div><div class="bx-stat-label">Costos mantenimiento</div></div>
+                <div class="bx-stat"><div class="bx-stat-value">87%</div><div class="bx-stat-label">C-suite confirma IA</div></div>
+            </div>
+            <div class="bx-quote">
+                <p class="bx-quote-text">Los gemelos digitales convierten la transformacion operativa en capacidad permanente.</p>
+                <p class="bx-quote-source">— Harvard Business Review, 2026</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="bx-section" id="s5-futuro">
+        <div class="bx-container">
+            <h2 class="bx-h2">De portafolio administrado a portafolio inteligente</h2>
+            <p class="bx-body">Bexalta OS no cambia lo que construiste. Lo potencia.</p>
+            <h3 class="bx-emphasis">Excelencia que se nota.</h3>
+        </div>
+    </section>
+
+    <section class="bx-section" id="s6-foundtech">
+        <div class="bx-container">
+            <h2 class="bx-h2">El socio que entiende operar a escala</h2>
+            <p class="bx-body">Foundtech: gemelos digitales para <strong>DHL, Constellation Brands, Nestle</strong>.</p>
+            <ul class="bx-roadmap-list">
+                <li class="bx-roadmap-item">Tecnologia clase mundial Fortune 500</li>
+                <li class="bx-roadmap-item">Experiencia en escala industrial</li>
+                <li class="bx-roadmap-item">Tecnologia al servicio del negocio</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="bx-cta-section" id="s7-cta">
+        <h2 class="bx-h2">El siguiente capitulo empieza con una conversacion.</h2>
+        <p class="bx-body" style="text-align:center">30 minutos. Demo personalizado.</p>
+        <a href="#" class="bx-cta-button">Agendar demo &rarr;</a>
+        <p class="bx-cta-micro">Sesion ejecutiva 1-a-1</p>
+    </section>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
