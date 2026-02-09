@@ -24,6 +24,8 @@ export class ScrollAnimations {
         const items = document.querySelectorAll('.bx-capability');
         if (!items.length) return;
 
+        if (!items.length || !window.gsap) return;
+
         window.gsap.from(items, {
             scrollTrigger: { trigger: '#s3-bexalta-os', start: 'top 70%' },
             y: 40,
@@ -38,6 +40,8 @@ export class ScrollAnimations {
     statsFadeIn() {
         const stats = document.querySelectorAll('.bx-stat');
         if (!stats.length) return;
+
+        if (!stats.length || !window.gsap) return;
 
         window.gsap.from(stats, {
             scrollTrigger: { trigger: '#s4-impacto', start: 'top 75%' },
@@ -59,6 +63,8 @@ export class ScrollAnimations {
             const paragraphs = section.querySelectorAll('.bx-body, p');
             if (!paragraphs.length) return;
 
+            if (!window.gsap) return;
+
             window.gsap.from(paragraphs, {
                 scrollTrigger: { trigger: section, start: 'top 70%' },
                 y: 20,
@@ -74,6 +80,8 @@ export class ScrollAnimations {
     roadmapCascade() {
         const items = document.querySelectorAll('.bx-roadmap-item');
         if (!items.length) return;
+
+        if (!items.length || !window.gsap) return;
 
         window.gsap.from(items, {
             scrollTrigger: { trigger: '#s6-foundtech', start: 'top 65%' },
@@ -94,6 +102,8 @@ export class ScrollAnimations {
         const button = cta.querySelector('.bx-cta-button');
         const micro = cta.querySelector('.bx-cta-micro');
 
+        if (!window.gsap) return;
+
         const tl = window.gsap.timeline({
             scrollTrigger: { trigger: cta, start: 'top 75%' }
         });
@@ -111,10 +121,10 @@ export class ScrollAnimations {
         const h1 = hero.querySelector('.bx-h1, h1');
         const sub = hero.querySelector('.bx-subhead');
 
-        if (h1) {
+        if (h1 && window.gsap) {
             window.gsap.from(h1, { y: 40, opacity: 0, duration: 1, delay: 0.2, ease: 'power3.out' });
         }
-        if (sub) {
+        if (sub && window.gsap) {
             window.gsap.from(sub, { y: 30, opacity: 0, duration: 0.8, delay: 0.5, ease: 'power2.out' });
         }
     }

@@ -22,7 +22,10 @@ export class ChromaticTransition {
     }
 
     init() {
-        window.ScrollTrigger.create({
+        const ST = window.ScrollTrigger || (window.gsap && window.gsap.ScrollTrigger);
+        if (!ST) return;
+
+        ST.create({
             trigger: 'body',
             start: 'top top',
             end: 'bottom bottom',

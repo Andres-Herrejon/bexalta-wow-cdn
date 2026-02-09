@@ -1,96 +1,119 @@
 
 uniform float uTime;
-uniform float uScrollProgress; // 0.0 (top) to 1.0 (bottom)
-uniform vec2 uMouse;
-uniform vec2 uResolution;
+uniform float uScroll;       // 0.0 (top) to 1.0 (bottom)
+uniform float uPixelRatio;
+uniform vec3 uPointer;       // Mouse position in world space
 
-attribute vec3 aRandom; // x: random offset, y: size variation, z: speed variation
+attribute float aIndex;
+attribute vec3 aRandom;      // Chaos sphere positions
+attribute vec3 aTarget;      // Organized grid positions
 
+varying float vVisible;
 varying vec3 vColor;
 
-// Simplex/Perlin Noise function (Simplified for performance)
-// Source: https://github.com/stegu/webgl-noise
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
-float snoise(vec2 v) {
-  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-  vec2 i  = floor(v + dot(v, C.yy) );
-  vec2 x0 = v - i + dot(i, C.xx);
-  vec2 i1;
-  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-  vec4 x12 = x0.xyxy + C.xxzz;
-  x12.xy -= i1;
-  i = mod289(i);
-  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-  m = m*m ;
-  return 130.0 * dot(m, vec3( dot(x0,p.x), dot(x12.xy,p.y), dot(x12.zw,p.z) ));
+// Simple noise for organic chaos movement
+vec3 getNoise(vec3 p, float time) {
+  float t = time * 0.5;
+  return vec3(
+    sin(p.y * 2.0 + t),
+    cos(p.z * 1.5 + t),
+    sin(p.x * 2.5 + t)
+  ) * 0.1;
 }
 
 void main() {
-    vec3 pos = position;
+    // ----------------------------
+    // 1. Progressive Reveal
+    // ----------------------------
+    float totalParticles = 25000.0;
+    float initialCount = 10000.0;
 
-    // --- State A: Chaos (Perlin Noise) ---
-    // Particles float organically
-    float noiseTime = uTime * 0.2 + aRandom.z;
-    float noiseX = snoise(vec2(pos.x * 0.002, noiseTime));
-    float noiseY = snoise(vec2(pos.y * 0.002, noiseTime + 100.0));
-    
-    vec3 chaosPos = pos;
-    chaosPos.x += noiseX * 50.0;
-    chaosPos.y += noiseY * 50.0;
+    float revealThreshold = (aIndex - initialCount) / (totalParticles - initialCount);
+    float effectiveScrollForReveal = smoothstep(0.3, 0.9, uScroll);
 
+    float isBaseParticle = step(aIndex, initialCount);
+    float isRevealed = step(revealThreshold, effectiveScrollForReveal);
 
-    // --- State B: Clarity (Parametric Sine Wave) ---
-    // Particles define a mathematical sine wave structure
-    // Structured Laminar Flow
-    
-    float waveFreq = 0.01;
-    float waveAmp = 50.0;
-    float flowSpeed = uTime * 2.0;
-    
-    // We want them to form lines/waves based on their Y position or Index
-    // Let's make them flow horizontally in sine waves
-    
-    float sineOffset = sin(pos.x * waveFreq + flowSpeed + aRandom.x * 5.0) * waveAmp;
-    
-    vec3 clarityPos = pos;
-    clarityPos.y += sineOffset;
-    // Align y to a grid for more "order"? 
-    // Let's keep the original Y but add the wave.
-    
-    // --- Transition ---
-    // 0.0 = Chaos, 1.0 = Clarity
-    // uScrollProgress 0 -> 1
-    // Let's map it so transition happens 0.2 -> 0.8
-    
-    float t = smoothstep(0.0, 0.8, uScrollProgress);
-    
-    vec3 finalPos = mix(chaosPos, clarityPos, t);
-    
-    // Mouse Interaction (Push)
-    // Works in both states, but weaker in Clarity
-    float dist = distance(finalPos.xy, uMouse);
-    float maxDist = 300.0;
-    if(dist < maxDist) {
-        float force = (maxDist - dist) / maxDist; // 0 to 1
-        vec2 dir = normalize(finalPos.xy - uMouse);
-        finalPos.xy += dir * force * 100.0 * (1.0 - t * 0.5); // Less push in clarity
-    }
+    float isVisible = max(isBaseParticle, isRevealed);
+    vVisible = isVisible;
 
-    vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
-    gl_Position = projectionMatrix * mvPosition;
-    
-    // Size attenuation
-    gl_PointSize = (4.0 * aRandom.y + 2.0) * (300.0 / -mvPosition.z);
+    // ----------------------------
+    // 2. Position: Chaos vs Organized Wave
+    // ----------------------------
 
-    // Color Interpolation passing to Fragment
-    // 0.0: Dark/Grey
-    // 1.0: Brand Green (#A2C62E -> 0.635, 0.776, 0.180)
-    
-    vec3 colorChaos = vec3(0.5, 0.5, 0.5); // Grey
-    vec3 colorClarity = vec3(0.635, 0.776, 0.180); // Foundtech Green
-    
-    vColor = mix(colorChaos, colorClarity, t);
+    // State A: Chaos cloud (random sphere)
+    vec3 chaosPos = aRandom * 4.0;
+    vec3 chaosMovement = getNoise(chaosPos, uTime * 2.0);
+    vec3 posA = chaosPos + chaosMovement;
+
+    // State B: Organized sine wave flow
+    vec3 posB = aTarget;
+
+    // Double sine wave for mathematical data-flow look
+    float speed = 2.0;
+    float freq1 = 0.5;
+    float amp1 = 1.2;
+    float freq2 = 1.2;
+    float amp2 = 0.3;
+
+    float wave1 = sin(posB.x * freq1 - uTime * speed);
+    float wave2 = cos(posB.x * freq2 - uTime * speed * 1.5 + posB.z);
+    posB.y += (wave1 * amp1) + (wave2 * amp2);
+
+    // Interpolation (Chaos -> Order)
+    float mixFactor = smoothstep(0.0, 0.8, uScroll);
+    vec3 finalPos = mix(posA, posB, mixFactor);
+
+    // Gentle rotation in chaos state, dampened as wave forms
+    float angle = (1.0 - mixFactor) * uTime * 0.1;
+    float s = sin(angle);
+    float c = cos(angle);
+    mat2 rot = mat2(c, -s, s, c);
+    finalPos.xz = rot * finalPos.xz;
+
+    // ----------------------------
+    // 3. Mouse Repulsion
+    // ----------------------------
+    float dist = distance(finalPos, uPointer);
+    float radius = 3.0;
+    float repulsionStrength = 2.0;
+
+    float repulsion = smoothstep(radius, 0.0, dist);
+    vec3 repelDir = normalize(finalPos - uPointer + 0.001);
+
+    vec3 interactionOffset = repelDir * repulsion * repulsionStrength;
+    interactionOffset.y += repulsion * 1.0;
+
+    finalPos += interactionOffset;
+
+    vec4 viewPosition = modelViewMatrix * vec4(finalPos, 1.0);
+    gl_Position = projectionMatrix * viewPosition;
+
+    // ----------------------------
+    // 4. Size
+    // ----------------------------
+    float baseSize = 14.0;
+    float sizeFactor = mix(1.0, 0.8, mixFactor);
+
+    gl_PointSize = baseSize * sizeFactor * uPixelRatio * (1.0 / -viewPosition.z);
+    gl_PointSize *= isVisible;
+
+    // ----------------------------
+    // 5. Color: 3-act narrative
+    // ----------------------------
+    // Foundtech brand palette
+    vec3 colorBlack = vec3(0.03, 0.03, 0.03);   // #080808 Act I
+    vec3 colorGray  = vec3(0.78, 0.78, 0.77);   // #C7C6C6 Foundtech Light Gray
+    vec3 colorGreen = vec3(0.635, 0.776, 0.18);  // #a2c62e Foundtech Green
+    vec3 colorOlive = vec3(0.447, 0.573, 0.173); // #72922C Foundtech Olive
+
+    // Act I (0-0.4): darkness -> gray mist
+    vec3 c1 = mix(colorBlack, colorGray, smoothstep(0.0, 0.4, uScroll));
+    // Act II-III (0.4-0.9): gray -> Foundtech Green
+    float depthBrightness = smoothstep(-2.0, 2.0, posB.y) * 0.15;
+    vec3 targetGreen = mix(colorOlive, colorGreen, 0.7) + depthBrightness;
+
+    vec3 c2 = mix(c1, targetGreen, smoothstep(0.4, 0.9, uScroll));
+
+    vColor = c2;
 }

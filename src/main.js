@@ -1,5 +1,5 @@
 /**
- * Bexalta WOW Effects v2.0.2 — Premium Bundle
+ * Bexalta WOW Effects v2.1.0 — Premium Bundle
  * "Claridad Radical" visual system
  *
  * Single entry point orchestrating all effects.
@@ -19,7 +19,7 @@ import { ScrollAnimations } from './effects/ScrollAnimations.js';
 import { TopographyOverlay } from './effects/TopographyOverlay.js';
 
 // Global namespace
-window.BexaltaWOW = { version: '2.0.2' };
+window.BexaltaWOW = { version: '2.1.0' };
 
 /**
  * Wait for GSAP + ScrollTrigger globals (loaded async by Webflow header).
@@ -47,15 +47,25 @@ function waitForGSAP() {
         }, 5000);
     });
 }
+/**
+ * Safe accessor for ScrollTrigger
+ */
+function getScrollTrigger() {
+    return window.ScrollTrigger || (window.gsap && window.gsap.ScrollTrigger);
+}
 
 async function init() {
-    console.log('[BexaltaWOW] v2.0.2 — Claridad Radical');
+    console.log('[BexaltaWOW] v2.1.0 — Claridad Radical');
 
     // --- 0. WAIT FOR GSAP (async loaded by Webflow header) ---
     await waitForGSAP();
 
-    if (window.gsap && window.ScrollTrigger) {
-        window.gsap.registerPlugin(window.ScrollTrigger);
+    const ST = getScrollTrigger();
+    if (window.gsap && ST) {
+        window.gsap.registerPlugin(ST);
+        console.log('[BexaltaWOW] GSAP registered');
+    } else {
+        console.warn('[BexaltaWOW] ScrollTrigger not found, some effects will be disabled');
     }
 
     // --- 1. PRELOADER ---
@@ -87,12 +97,12 @@ async function init() {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
-        45,
+        60,
         window.innerWidth / window.innerHeight,
-        1,
-        1000
+        0.1,
+        100
     );
-    camera.position.z = 500;
+    camera.position.z = 5;
 
     // --- 3. EFFECTS ---
 
@@ -100,7 +110,7 @@ async function init() {
     const neuralFlow = new NeuralFlow(scene, camera, renderer);
 
     // B. Chromatic Transition — Background color evolution
-    new ChromaticTransition();
+    if (getScrollTrigger()) new ChromaticTransition();
 
     // C. Chromatic Spine — Left edge progress
     new ChromaticSpine();
@@ -109,7 +119,7 @@ async function init() {
     new GreenNodes();
 
     // E. Scroll Animations — GSAP triggers
-    new ScrollAnimations();
+    if (getScrollTrigger()) new ScrollAnimations();
 
     // F. Topography Overlay — Industrial contours (S1-S2)
     const topoUrl = document.body.dataset.topoAsset || null;
