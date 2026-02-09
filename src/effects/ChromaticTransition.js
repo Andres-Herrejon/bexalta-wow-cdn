@@ -7,11 +7,7 @@
  * Act III (66-100%): #1a1a1a + green overlay fades in
  */
 
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { createElement } from '../utils/dom.js';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export class ChromaticTransition {
     constructor() {
@@ -26,7 +22,7 @@ export class ChromaticTransition {
     }
 
     init() {
-        ScrollTrigger.create({
+        window.ScrollTrigger.create({
             trigger: 'body',
             start: 'top top',
             end: 'bottom bottom',

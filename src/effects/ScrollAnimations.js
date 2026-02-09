@@ -3,10 +3,7 @@
  * Capability cascade, stats fade-in, paragraphs, roadmap, CTA
  */
 
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
 
 export class ScrollAnimations {
     constructor() {
@@ -27,7 +24,7 @@ export class ScrollAnimations {
         const items = document.querySelectorAll('.bx-capability');
         if (!items.length) return;
 
-        gsap.from(items, {
+        window.gsap.from(items, {
             scrollTrigger: { trigger: '#s3-bexalta-os', start: 'top 70%' },
             y: 40,
             opacity: 0,
@@ -42,7 +39,7 @@ export class ScrollAnimations {
         const stats = document.querySelectorAll('.bx-stat');
         if (!stats.length) return;
 
-        gsap.from(stats, {
+        window.gsap.from(stats, {
             scrollTrigger: { trigger: '#s4-impacto', start: 'top 75%' },
             y: 30,
             opacity: 0,
@@ -62,7 +59,7 @@ export class ScrollAnimations {
             const paragraphs = section.querySelectorAll('.bx-body, p');
             if (!paragraphs.length) return;
 
-            gsap.from(paragraphs, {
+            window.gsap.from(paragraphs, {
                 scrollTrigger: { trigger: section, start: 'top 70%' },
                 y: 20,
                 opacity: 0,
@@ -78,7 +75,7 @@ export class ScrollAnimations {
         const items = document.querySelectorAll('.bx-roadmap-item');
         if (!items.length) return;
 
-        gsap.from(items, {
+        window.gsap.from(items, {
             scrollTrigger: { trigger: '#s6-foundtech', start: 'top 65%' },
             x: -30,
             opacity: 0,
@@ -97,7 +94,7 @@ export class ScrollAnimations {
         const button = cta.querySelector('.bx-cta-button');
         const micro = cta.querySelector('.bx-cta-micro');
 
-        const tl = gsap.timeline({
+        const tl = window.gsap.timeline({
             scrollTrigger: { trigger: cta, start: 'top 75%' }
         });
 
@@ -115,10 +112,10 @@ export class ScrollAnimations {
         const sub = hero.querySelector('.bx-subhead');
 
         if (h1) {
-            gsap.from(h1, { y: 40, opacity: 0, duration: 1, delay: 0.2, ease: 'power3.out' });
+            window.gsap.from(h1, { y: 40, opacity: 0, duration: 1, delay: 0.2, ease: 'power3.out' });
         }
         if (sub) {
-            gsap.from(sub, { y: 30, opacity: 0, duration: 0.8, delay: 0.5, ease: 'power2.out' });
+            window.gsap.from(sub, { y: 30, opacity: 0, duration: 0.8, delay: 0.5, ease: 'power2.out' });
         }
     }
 }

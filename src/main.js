@@ -8,8 +8,7 @@
  */
 
 import * as THREE from 'three';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 
 import { Preloader } from './effects/Preloader.js';
 import { NeuralFlow } from './effects/NeuralFlow.js';
@@ -56,7 +55,7 @@ async function init() {
     await waitForGSAP();
 
     if (window.gsap && window.ScrollTrigger) {
-        gsap.registerPlugin(ScrollTrigger);
+        window.gsap.registerPlugin(window.ScrollTrigger);
     }
 
     // --- 1. PRELOADER ---

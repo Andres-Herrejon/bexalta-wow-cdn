@@ -3,11 +3,7 @@
  * Data crystallizing into intelligence
  */
 
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { createElement } from '../utils/dom.js';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export class GreenNodes {
     constructor() {
@@ -32,7 +28,7 @@ export class GreenNodes {
             cap.style.position = 'relative';
 
             // Entrance
-            gsap.to(node, {
+            window.gsap.to(node, {
                 scrollTrigger: { trigger: '#s3-bexalta-os', start: 'top 60%' },
                 scale: 1,
                 opacity: 1,
@@ -42,7 +38,7 @@ export class GreenNodes {
             });
 
             // Pulse
-            gsap.to(node, {
+            window.gsap.to(node, {
                 scale: 1.2,
                 duration: 1.5,
                 repeat: -1,
@@ -65,7 +61,7 @@ export class GreenNodes {
 
             item.style.position = 'relative';
 
-            gsap.to(node, {
+            window.gsap.to(node, {
                 scrollTrigger: { trigger: '#s6-foundtech', start: 'top 65%' },
                 scale: 1,
                 opacity: 1,

@@ -3,11 +3,7 @@
  * Subtle texture overlay representing non-digitized infrastructure
  */
 
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { createElement } from '../utils/dom.js';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export class TopographyOverlay {
     /**
@@ -33,7 +29,7 @@ export class TopographyOverlay {
                 section, true
             );
 
-            gsap.to(overlay, {
+            window.gsap.to(overlay, {
                 scrollTrigger: { trigger: section, start: 'top 80%' },
                 opacity: 0.2,
                 duration: 2,

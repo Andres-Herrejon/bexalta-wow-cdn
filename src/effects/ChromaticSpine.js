@@ -4,11 +4,7 @@
  * Dark base → Light-to-Green fill with glow
  */
 
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { createElement } from '../utils/dom.js';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export class ChromaticSpine {
     constructor() {
@@ -36,7 +32,7 @@ export class ChromaticSpine {
     }
 
     init() {
-        ScrollTrigger.create({
+        window.ScrollTrigger.create({
             trigger: 'body',
             start: 'top top',
             end: 'bottom bottom',
