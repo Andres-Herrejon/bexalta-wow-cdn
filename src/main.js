@@ -114,11 +114,24 @@ async function init() {
 
     // 3.1 Sample Hero Assets
     console.log('[BexaltaWOW] Sampling hero assets...');
-    const [posBexalta, posFoundtech, posBexaltaOS] = await Promise.all([
-        sampleSVG(BEXALTA_SVG, 25000),
-        sampleSVG(FOUNDTECH_SVG, 25000),
-        sampleText('BEXALTA OS', 25000, { fontSize: 100, fontFamily: 'sans-serif', bold: true })
-    ]);
+
+    let posBexalta, posFoundtech, posBexaltaOS;
+
+    try {
+        [posBexalta, posFoundtech, posBexaltaOS] = await Promise.all([
+            sampleSVG(BEXALTA_SVG, 25000),
+            sampleSVG(FOUNDTECH_SVG, 25000),
+            sampleText('BEXALTA OS', 25000, { fontSize: 100, fontFamily: 'sans-serif', bold: true })
+        ]);
+        console.log('[BexaltaWOW] Assets sampled successfully');
+    } catch (err) {
+        console.error('[BexaltaWOW] Critical error sampling assets:', err);
+        // Fallback to chaos if sampling fails
+        const fallback = generateChaosPositions(25000);
+        posBexalta = fallback;
+        posFoundtech = fallback;
+        posBexaltaOS = fallback;
+    }
 
     // 3.2 Define States
     // Hero Sequence: Bexalta -> Foundtech -> Bexalta OS -> Chaos

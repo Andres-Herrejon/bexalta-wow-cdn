@@ -19,11 +19,17 @@ export async function sampleSVG(svgUrl, particleCount = 25000) {
 
         // 2. Create an Image element from SVG
         const img = new Image();
-        img.crossOrigin = "Anonymous";
+        // img.crossOrigin = "Anonymous"; // Removed to avoid potential issues with data URIs
 
-        await new Promise(async (resolve, reject) => {
+        await new Promise((resolve, reject) => {
             img.onload = () => {
-                console.log(`[SVGSampler] Image loaded: ${img.width}x${img.height}`);
+                if (img.width === 0 || img.height === 0) {
+                    console.warn('[SVGSampler] Image loaded but has 0 dimensions. Checking viewBox...');
+                    // Fallback to default size if 0
+                    img.width = 500;
+                    img.height = 500;
+                }
+                console.log(`[SVGSampler] Image loaded: ${img.naturalWidth || img.width}x${img.naturalHeight || img.height}`);
                 resolve();
             };
             img.onerror = (e) => {
@@ -34,15 +40,16 @@ export async function sampleSVG(svgUrl, particleCount = 25000) {
             if (svgUrl.startsWith('data:')) {
                 img.src = svgUrl;
             } else {
-                try {
-                    const response = await fetch(svgUrl);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const text = await response.text();
-                    const blob = new Blob([text], { type: 'image/svg+xml' });
-                    img.src = URL.createObjectURL(blob);
-                } catch (err) {
-                    reject(err);
-                }
+                fetch(svgUrl)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.text();
+                    })
+                    .then(text => {
+                        const blob = new Blob([text], { type: 'image/svg+xml' });
+                        img.src = URL.createObjectURL(blob);
+                    })
+                    .catch(err => reject(err));
             }
         });
 
