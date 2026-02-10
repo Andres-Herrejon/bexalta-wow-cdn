@@ -9,17 +9,20 @@
 
 import * as THREE from 'three';
 
-
 import { Preloader } from './effects/Preloader.js';
-import { NeuralFlow } from './effects/NeuralFlow.js';
+import { ParticleOrchestrator } from './effects/ParticleOrchestrator.js';
 import { ChromaticTransition } from './effects/ChromaticTransition.js';
 import { ChromaticSpine } from './effects/ChromaticSpine.js';
 import { GreenNodes } from './effects/GreenNodes.js';
 import { ScrollAnimations } from './effects/ScrollAnimations.js';
 import { TopographyOverlay } from './effects/TopographyOverlay.js';
+import { generateChaosPositions, generateGridPositions } from './utils/generators.js';
+import { sampleSVG } from './utils/SVGSampler.js';
+import { sampleText } from './utils/TextSampler.js';
+import { BEXALTA_SVG, FOUNDTECH_SVG } from './assets/logos.js';
 
 // Global namespace
-window.BexaltaWOW = { version: '2.1.0' };
+window.BexaltaWOW = { version: '3.0.0-beta' };
 
 /**
  * Wait for GSAP + ScrollTrigger globals (loaded async by Webflow header).
@@ -55,7 +58,7 @@ function getScrollTrigger() {
 }
 
 async function init() {
-    console.log('[BexaltaWOW] v2.1.0 — Claridad Radical');
+    console.log('[BexaltaWOW] v3.0.0 — Particle Orchestrator Enabled');
 
     // --- 0. WAIT FOR GSAP (async loaded by Webflow header) ---
     await waitForGSAP();
@@ -106,8 +109,32 @@ async function init() {
 
     // --- 3. EFFECTS ---
 
-    // A. NeuralFlow — 3D particle background
-    const neuralFlow = new NeuralFlow(scene, camera, renderer);
+    // A. Particle Orchestrator (Replaces NeuralFlow)
+    const orchestrator = new ParticleOrchestrator(scene, camera, renderer, 25000);
+
+    // 3.1 Sample Hero Assets
+    console.log('[BexaltaWOW] Sampling hero assets...');
+    const [posBexalta, posFoundtech, posBexaltaOS] = await Promise.all([
+        sampleSVG(BEXALTA_SVG, 25000),
+        sampleSVG(FOUNDTECH_SVG, 25000),
+        sampleText('BEXALTA OS', 25000, { fontSize: 100, fontFamily: 'sans-serif', bold: true })
+    ]);
+
+    // 3.2 Define States
+    // Hero Sequence: Bexalta -> Foundtech -> Bexalta OS -> Chaos
+    orchestrator.addState('bexalta-logo', posBexalta, [1, 1, 1]); // White
+    orchestrator.addState('foundtech-logo', posFoundtech, [0.63, 0.77, 0.17]); // #a1c52d (Foundtech Lime)
+    orchestrator.addState('bexalta-os', posBexaltaOS, [1, 1, 1]); // White text
+    orchestrator.addState('chaos', generateChaosPositions(25000), [0.2, 0.2, 0.2]); // Dark grey chaos
+    orchestrator.addState('neural', generateGridPositions(25000), [0.0, 1.0, 0.5]); // Teal grid
+
+    // 3.3 Define Transitions (Scroll range 0.0 - 1.0)
+    // S1 Hero: 0.0 - 0.3
+    orchestrator.transitionTo('foundtech-logo', 0.00, 0.10); // Morph to Foundtech
+    orchestrator.transitionTo('bexalta-os', 0.10, 0.20); // Morph to Bexalta OS
+    orchestrator.transitionTo('chaos', 0.20, 0.30); // Explode to chaos
+    // S2 Problem: 0.3 - 0.5
+    orchestrator.transitionTo('neural', 0.30, 0.50); // Reassemble to grid
 
     // B. Chromatic Transition — Background color evolution
     if (getScrollTrigger()) new ChromaticTransition();
@@ -132,7 +159,7 @@ async function init() {
 
     function animate() {
         const time = clock.getElapsedTime();
-        if (neuralFlow) neuralFlow.update(time);
+        if (orchestrator) orchestrator.update(time);
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
     }
@@ -143,6 +170,7 @@ async function init() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        if (orchestrator) orchestrator.resize();
     });
 
     // --- 6. SCROLL EVENT DISPATCH (native scroll) ---

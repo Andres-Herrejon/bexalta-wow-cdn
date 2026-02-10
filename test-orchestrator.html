@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bexalta Particle Orchestrator Test</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #080808;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        input[type="range"] {
+            width: 300px;
+        }
+
+        .state-active {
+            color: #a2c62e;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="info">
+        <h2>Particle Orchestrator Debug</h2>
+        <p>Scroll: <span id="scrollVal">0.00</span></p>
+        <input type="range" id="scrollSlider" min="0" max="1" step="0.001" value="0">
+        <p>State: <span id="stateName">-</span></p>
+        <div id="statesList"></div>
+    </div>
+
+    <!-- Vite will bundle this, but for raw html testing we need mapped paths if not using vite dev server. 
+         Assuming running via `npm run dev` or served by vite. -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+        import { ParticleOrchestrator } from './src/effects/ParticleOrchestrator.js';
+
+        // Setup Scene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // Init Orchestrator
+        const orchestrator = new ParticleOrchestrator(scene, camera, renderer, 25000);
+
+        // Create States
+        // 1. Chaos (Initial)
+        const count = 25000;
+        const chaosPos = new Float32Array(count * 3);
+        for (let i = 0; i < count * 3; i++) chaosPos[i] = (Math.random() - 0.5) * 10;
+        orchestrator.addState('chaos', chaosPos, [0.5, 0.5, 0.5]);
+
+        // 2. Sphere (Target 1)
+        const spherePos = new Float32Array(count * 3);
+        const sphereRadius = 2.0;
+        for (let i = 0; i < count; i++) {
+            const phi = Math.acos(-1 + (2 * i) / count);
+            const theta = Math.sqrt(count * Math.PI) * phi;
+            spherePos[i * 3] = sphereRadius * Math.cos(theta) * Math.sin(phi);
+            spherePos[i * 3 + 1] = sphereRadius * Math.sin(theta) * Math.sin(phi);
+            spherePos[i * 3 + 2] = sphereRadius * Math.cos(phi);
+        }
+        orchestrator.addState('sphere', spherePos, [0.0, 1.0, 0.0]); // Green
+
+        // 3. Cube (Target 2)
+        const cubePos = new Float32Array(count * 3);
+        const cubeSize = 3.0;
+        for (let i = 0; i < count; i++) {
+            cubePos[i * 3] = (Math.random() - 0.5) * cubeSize;
+            cubePos[i * 3 + 1] = (Math.random() - 0.5) * cubeSize;
+            cubePos[i * 3 + 2] = (Math.random() - 0.5) * cubeSize;
+        }
+        orchestrator.addState('cube', cubePos, [0.0, 0.5, 1.0]); // Blue
+
+        // Define Transitions
+        // Chaos -> Sphere (0.1 - 0.3)
+        // Sphere -> Cube (0.5 - 0.7)
+        // Cube -> Chaos (0.8 - 1.0)
+
+        // Revised handling: We need explicitly to say: "At 0.1 start transition TO sphere"
+        // Implicitly means "FROM whatever was before (chaos)"
+        orchestrator.transitionTo('sphere', 0.1, 0.3);
+        orchestrator.transitionTo('cube', 0.5, 0.7);
+        orchestrator.transitionTo('chaos', 0.8, 1.0);
+
+        // UI Controls
+        const slider = document.getElementById('scrollSlider');
+        const scrollVal = document.getElementById('scrollVal');
+        const stateName = document.getElementById('stateName');
+        const list = document.getElementById('statesList');
+
+        list.innerHTML = `
+            <div>0.0 - 0.1: Chaos (Static)</div>
+            <div>0.1 - 0.3: -> Sphere</div>
+            <div>0.3 - 0.5: Sphere (Static)</div>
+            <div>0.5 - 0.7: -> Cube</div>
+            <div>0.7 - 0.8: Cube (Static)</div>
+            <div>0.8 - 1.0: -> Chaos</div>
+        `;
+
+        slider.addEventListener('input', (e) => {
+            const progress = parseFloat(e.target.value);
+            scrollVal.innerText = progress.toFixed(3);
+
+            // Dispatch event for orchestrator
+            window.dispatchEvent(new CustomEvent('wow-scroll', { detail: { progress } }));
+
+            // Quick hack to show internal state
+            stateName.innerText = `${orchestrator.currentStateName} -> ${orchestrator.nextStateName || 'stable'}`;
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+        function animate() {
+            const time = clock.getElapsedTime();
+            orchestrator.update(time);
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>

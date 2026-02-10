@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SVGSampler</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: monospace;
+            background: #080808;
+            color: #a2c62e;
+        }
+        #output {
+            white-space: pre-wrap;
+            padding: 20px;
+            background: #141414;
+            border: 1px solid #2d2d2d;
+            border-radius: 4px;
+        }
+        canvas {
+            border: 1px solid #a2c62e;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>SVGSampler Test</h1>
+    <div id="output">Cargando...</div>
+    <canvas id="preview" width="800" height="400"></canvas>
+
+    <script type="module">
+        import { sampleSVG } from './src/utils/SVGSampler.js';
+
+        const output = document.getElementById('output');
+        const canvas = document.getElementById('preview');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = '#080808';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        async function testSVGSampler() {
+            try {
+                output.textContent = 'Iniciando test de SVGSampler...\n';
+
+                // Test con logo Bexalta (copiado a raíz para testing)
+                const logoPath = '/logo_bexalta_white.svg';
+                output.textContent += `\nCargando: ${logoPath}\n`;
+
+                const startTime = performance.now();
+                const positions = await sampleSVG(logoPath, 15000); // 5K particles para preview
+                const endTime = performance.now();
+
+                output.textContent += `\n✓ SVG muestreado en ${(endTime - startTime).toFixed(2)}ms\n`;
+                output.textContent += `✓ Total de particulas: ${positions.length / 3}\n`;
+                output.textContent += `✓ Float32Array size: ${positions.length}\n`;
+
+                // Verificar rango de valores
+                let minX = Infinity, maxX = -Infinity;
+                let minY = Infinity, maxY = -Infinity;
+                let minZ = Infinity, maxZ = -Infinity;
+
+                for (let i = 0; i < positions.length / 3; i++) {
+                    const x = positions[i * 3];
+                    const y = positions[i * 3 + 1];
+                    const z = positions[i * 3 + 2];
+
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x);
+                    minY = Math.min(minY, y);
+                    maxY = Math.max(maxY, y);
+                    minZ = Math.min(minZ, z);
+                    maxZ = Math.max(maxZ, z);
+                }
+
+                output.textContent += `\nRangos de posiciones:\n`;
+                output.textContent += `  X: [${minX.toFixed(2)}, ${maxX.toFixed(2)}]\n`;
+                output.textContent += `  Y: [${minY.toFixed(2)}, ${maxY.toFixed(2)}]\n`;
+                output.textContent += `  Z: [${minZ.toFixed(2)}, ${maxZ.toFixed(2)}]\n`;
+
+                // Visualizar en canvas 2D
+                output.textContent += `\nDibujando preview en canvas...\n`;
+
+                ctx.fillStyle = '#a2c62e';
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const scale = 25; // Scale para visualizar en canvas
+
+                for (let i = 0; i < positions.length / 3; i++) {
+                    const x = positions[i * 3];
+                    const y = positions[i * 3 + 1];
+
+                    const screenX = centerX + x * scale;
+                    const screenY = centerY + y * scale;
+
+                    ctx.beginPath(); ctx.arc(screenX, screenY, 1.5, 0, Math.PI * 2); ctx.fill();
+                }
+
+                output.textContent += `\n✓ Preview renderizado (${positions.length / 3} particulas)\n`;
+                output.textContent += `\n=== TEST COMPLETO ===\n`;
+                output.textContent += `El logo debe verse en el canvas arriba.\n`;
+                output.textContent += `Si ves la silueta del logo Bexalta, SVGSampler funciona correctamente.`;
+
+            } catch (error) {
+                output.textContent += `\n✗ ERROR CAPTURADO:\n`;
+                output.textContent += `Message: ${error?.message || 'No message'}\n`;
+                output.textContent += `Stack: ${error?.stack || 'No stack'}\n`;
+                output.textContent += `Type: ${typeof error}\n`;
+                output.textContent += `String: ${String(error)}\n`;
+                console.error('Error completo:', error);
+            }
+        }
+
+        testSVGSampler();
+    </script>
+</body>
+</html>

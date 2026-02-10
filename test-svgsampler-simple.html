@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SVGSampler - Simple</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: monospace;
+            background: #080808;
+            color: #a2c62e;
+        }
+        #output {
+            white-space: pre-wrap;
+            padding: 20px;
+            background: #141414;
+            border: 1px solid #2d2d2d;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 1px solid #a2c62e;
+        }
+    </style>
+</head>
+<body>
+    <h1>SVGSampler Test - Versión Simple (Inline)</h1>
+    <div id="output">Iniciando test...</div>
+    <canvas id="preview" width="800" height="400"></canvas>
+
+    <script>
+        const output = document.getElementById('output');
+        const canvas = document.getElementById('preview');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = '#080808';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Implementación inline simplificada de sampleSVG
+        async function sampleSVG(svgUrl, particleCount = 5000) {
+            try {
+                output.textContent += `\n[1] Fetching SVG from: ${svgUrl}\n`;
+
+                // Fetch SVG
+                const response = await fetch(svgUrl);
+                output.textContent += `[2] Response status: ${response.status} ${response.statusText}\n`;
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const svgText = await response.text();
+                output.textContent += `[3] SVG text length: ${svgText.length} chars\n`;
+                output.textContent += `[4] SVG preview: ${svgText.substring(0, 100)}...\n`;
+
+                // Create image from SVG
+                const img = new Image();
+                const blob = new Blob([svgText], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+
+                output.textContent += `[5] Blob URL created: ${url}\n`;
+
+                await new Promise((resolve, reject) => {
+                    img.onload = () => {
+                        output.textContent += `[6] Image loaded: ${img.width}x${img.height}px\n`;
+                        resolve();
+                    };
+                    img.onerror = (e) => {
+                        output.textContent += `[6] Image error: ${e}\n`;
+                        reject(new Error('Image failed to load'));
+                    };
+                    img.src = url;
+                });
+
+                // Draw to canvas
+                const offCanvas = document.createElement('canvas');
+                const offCtx = offCanvas.getContext('2d');
+
+                const maxDim = 512;
+                const aspect = img.width / img.height;
+
+                if (aspect >= 1) {
+                    offCanvas.width = maxDim;
+                    offCanvas.height = maxDim / aspect;
+                } else {
+                    offCanvas.width = maxDim * aspect;
+                    offCanvas.height = maxDim;
+                }
+
+                output.textContent += `[7] Canvas size: ${offCanvas.width}x${offCanvas.height}px\n`;
+
+                // Draw white background + image
+                offCtx.fillStyle = '#000000'; // Black bg to see white logo
+                offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+                offCtx.drawImage(img, 0, 0, offCanvas.width, offCanvas.height);
+
+                URL.revokeObjectURL(url);
+
+                // Sample pixels
+                const imageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+                const pixels = imageData.data;
+                const sampledPoints = [];
+
+                for (let y = 0; y < offCanvas.height; y++) {
+                    for (let x = 0; x < offCanvas.width; x++) {
+                        const i = (y * offCanvas.width + x) * 4;
+                        const alpha = pixels[i + 3];
+
+                        if (alpha > 128) {
+                            sampledPoints.push({
+                                x: x / offCanvas.width,
+                                y: y / offCanvas.height
+                            });
+                        }
+                    }
+                }
+
+                output.textContent += `[8] Found ${sampledPoints.length} visible pixels\n`;
+
+                if (sampledPoints.length === 0) {
+                    throw new Error('No visible pixels found in SVG');
+                }
+
+                // Sub-sample to particleCount
+                const finalPoints = [];
+                if (sampledPoints.length >= particleCount) {
+                    const indices = new Set();
+                    while (indices.size < particleCount) {
+                        indices.add(Math.floor(Math.random() * sampledPoints.length));
+                    }
+                    indices.forEach(i => finalPoints.push(sampledPoints[i]));
+                } else {
+                    for (let i = 0; i < particleCount; i++) {
+                        const srcPoint = sampledPoints[i % sampledPoints.length];
+                        finalPoints.push({
+                            x: srcPoint.x + (Math.random() - 0.5) * 0.002,
+                            y: srcPoint.y + (Math.random() - 0.5) * 0.002
+                        });
+                    }
+                }
+
+                output.textContent += `[9] Created ${finalPoints.length} final points\n`;
+
+                // Normalize to camera space
+                const positions = new Float32Array(particleCount * 3);
+                const scale = 10;
+
+                for (let i = 0; i < particleCount; i++) {
+                    const point = finalPoints[i];
+                    positions[i * 3] = (point.x - 0.5) * scale * aspect;
+                    positions[i * 3 + 1] = -(point.y - 0.5) * scale;
+                    positions[i * 3 + 2] = 0;
+                }
+
+                output.textContent += `[10] ✓ Positions array created: ${positions.length} floats\n`;
+
+                return positions;
+
+            } catch (error) {
+                output.textContent += `\n✗ ERROR in sampleSVG:\n`;
+                output.textContent += `  Message: ${error.message}\n`;
+                output.textContent += `  Stack: ${error.stack}\n`;
+                throw error;
+            }
+        }
+
+        // Run test
+        async function runTest() {
+            try {
+                const logoPath = '/logo_bexalta_white.svg';
+                const positions = await sampleSVG(logoPath, 15000);
+
+                // Visualize
+                output.textContent += `\n[11] Dibujando preview...\n`;
+
+                ctx.fillStyle = '#a2c62e';
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const scale = 25;
+
+                for (let i = 0; i < positions.length / 3; i++) {
+                    const x = positions[i * 3];
+                    const y = positions[i * 3 + 1];
+
+                    const screenX = centerX + x * scale;
+                    const screenY = centerY + y * scale;
+
+                    ctx.beginPath(); ctx.arc(screenX, screenY, 1.5, 0, Math.PI * 2); ctx.fill();
+                }
+
+                output.textContent += `\n=== ✓ TEST EXITOSO ===\n`;
+                output.textContent += `Si ves el logo arriba, SVGSampler funciona correctamente.\n`;
+
+            } catch (error) {
+                output.textContent += `\n=== ✗ TEST FALLIDO ===\n`;
+                output.textContent += `Error: ${error.message}\n`;
+                console.error('Test error:', error);
+            }
+        }
+
+        runTest();
+    </script>
+</body>
+</html>
